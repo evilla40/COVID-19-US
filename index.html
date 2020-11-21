@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>COVID-19 Data</title>
+      
+    <link href="https://unpkg.com/material-components-web@v4.0.0/dist/material-components-web.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/material-components-web@v4.0.0/dist/material-components-web.min.js"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+
+    <link rel="stylesheet" href="css/style.css" />
+      
+    <link rel="manifest" href="manifest.json" />
+    <!-- ios support -->
+    <link rel="apple-touch-icon" href="images/icons/icon-72x72.png" />
+    <link rel="apple-touch-icon" href="images/icons/icon-96x96.png" />
+    <link rel="apple-touch-icon" href="images/icons/icon-128x128.png" />
+    <link rel="apple-touch-icon" href="images/icons/icon-144x144.png" />
+    <link rel="apple-touch-icon" href="images/icons/icon-152x152.png" />
+    <link rel="apple-touch-icon" href="images/icons/icon-192x192.png" />
+    <link rel="apple-touch-icon" href="images/icons/icon-384x384.png" />
+    <link rel="apple-touch-icon" href="images/icons/icon-512x512.png" />
+    <meta name="apple-mobile-web-app-status-bar" content="#db4938" />
+    <meta name="theme-color" content="#db4938" />  
+     
+    <!-- Google Line Chart -->
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+      google.charts.load('current', {'packages':['corechart']});
+
+      function drawChart(data_arg, str) {
+        let data = google.visualization.arrayToDataTable(data_arg);
+        
+        let options = {
+          title: str,
+          curveType: 'function',
+          legend: { position: 'bottom' }
+        };
+
+        let chart = new google.visualization.LineChart(document.getElementById('chart'));
+
+        chart.draw(data, options);
+      }
+    </script>
+  </head>
+  <body>
+
+    <header class="mdc-top-app-bar">
+        <div class="mdc-top-app-bar__row">
+            <section class="mdc-top-app-bar__section mdc-top-app-bar__section--align-start">
+                <span class="mdc-top-app-bar__title">COVID-19 Data</span>
+            </section>
+            <section class="mdc-top-app-bar__section mdc-top-app-bar__section--align-end" role="toolbar">
+                <button id="search-button" class="material-icons mdc-top-app-bar__action-item mdc-icon-button" aria-label="Search">search</button>
+                <button id="table-button" class="material-icons mdc-top-app-bar__action-item mdc-icon-button" aria-label="Table">view_module</button>
+                <button id="chart-button" class="material-icons mdc-top-app-bar__action-item mdc-icon-button" aria-label="Chart">trending_up</button>
+            </section>
+        </div>
+    </header>
+
+    <main class="mdc-top-app-bar--fixed-adjust">
+        <!-- First Screen -->
+        <div id="search" class="view">
+            <br><form action="" class="data-type">
+                <select id="data-type">
+                   <option value="positive" selected="selected">Confirmed</option> 
+                   <option value="death">Deaths</option>
+                   <option value="recovered">Recovered</option>
+                </select>
+            </form>
+            <br><form action="/action_page.php" method="get" class="countries">
+                </form><br>
+
+            <button class="mdc-button foo-button mdc-button--raised create-data">
+                <div class="mdc-button__ripple"></div>
+                <span class="mdc-button__label">Show Data</span>
+            </button>
+          </div>
+        <!-- Second Screen -->
+        <div id="table" class="view"></div>
+    </main>
+
+      
+    <script type="text/javascript">
+      mdc.topAppBar.MDCTopAppBar.attachTo(document.querySelector('header.mdc-top-app-bar'));
+        
+      let ds = null;
+      let title_val = null;
+        
+      //Add event listener to SEARCH button
+      document.querySelector("#search-button").addEventListener("click", 
+          (e) => { 
+              document.querySelector("#search").style.display = "block";
+              document.querySelector("#table").style.display = "none";
+              let exist = document.querySelector("#chart");
+              if (exist) {
+                  exist.remove();
+              }
+      });
+      //Add event listener to TABLE button
+      document.querySelector("#table-button").addEventListener("click", 
+          (e) => { 
+              document.querySelector("#search").style.display = "none";
+              document.querySelector("#table").style.display = "block";
+              let exist = document.querySelector("#chart");
+              if (exist) {
+                  exist.remove();
+              }
+      });
+      //Add event listener to CHART button
+      document.querySelector("#chart-button").addEventListener("click", 
+          (e) => { 
+              document.querySelector("#search").style.display = "none";
+              document.querySelector("#table").style.display = "none";
+              //document.querySelector("#chart").style.display = "block";
+              let div = document.createElement("div");
+              div.setAttribute("id", "chart");
+              div.setAttribute("style", "height: 500px;");
+              document.querySelector("main").append(div);
+              if (ds != null) {
+                  drawChart(ds, title_val);
+              }
+      });
+      
+      var data;
+      let states = [];
+      fetch("https://api.covidtracking.com/v1/states/daily.json")
+      .then(response => response.json())
+      .then(json => {
+          console.log(json);
+          data = json;
+          states = [...new Set(data.map(x => x["state"]))]
+          console.log(states)
+          
+          //Add key values to data list for user to select from
+          
+          let dList = document.querySelector(".countries");
+          for (let s in states) {
+              let checkbox = document.createElement('input');
+              checkbox.type = "checkbox";
+              checkbox.id = states[s];
+              checkbox.value = states[s];
+ 
+              let label = document.createElement('label')
+              label.htmlFor = states[s];
+ 
+              let description = document.createTextNode(states[s]);
+              label.appendChild(description);
+ 
+              let newline = document.createElement('br');
+ 
+              dList.appendChild(checkbox);
+              dList.appendChild(label);
+              dList.appendChild(newline);
+          }     
+      });
+      
+      
+      
+      
+      //Add event listener to button
+      document.querySelector(".create-data").addEventListener("click", 
+          (e) => {
+              let array = []
+              let array_of_arrays = []
+              for (let s in states) {
+                  if (document.getElementById(states[s]).checked) {
+                      array.push(states[s]);
+                      for (let obj of data) {
+                          if (obj["state"] == states[s]) {
+                              array_of_arrays.push(obj);
+                          }
+                      }
+                  }
+              }
+              
+              let dataset = []
+              let temparray = []
+              let d = document.querySelector("#data-type");
+              let valD = d.options[d.selectedIndex].value;
+              if (valD == 'positive') {
+                  title_val = 'Confirmed Cases of COVID-19 In Each State';
+              }
+              else if (valD == 'death') {
+                  title_val = 'COVID-19 Deaths In Each State';
+              }
+              else {
+                  title_val = 'Recovered Cases of COVID-19 In Each State';
+              }              
+              let existing = document.querySelector("table");
+              if (existing) {
+                  existing.remove();
+              }
+              existing = document.querySelector("p.title");
+              if (existing) {
+                  existing.remove();
+              }
+              let p = document.createElement("p");
+              p.setAttribute("class", "title");
+              p.textContent = title_val;
+              document.querySelector("#table").append(p);
+              let table = document.createElement("table");   
+              document.querySelector("#table").append(table);
+              let tr = document.createElement("tr");
+              table.append(tr);
+              let date = document.createElement("th");
+              date.textContent = "Date";
+              temparray.push("Date");
+              tr.append(date);
+              for(let i in array) {
+                  let th = document.createElement("th");
+                  th.textContent = array[i];
+                  temparray.push(array[i]);
+                  tr.append(th);  
+              }
+              dataset.push(temparray); 
+              let dates = [...new Set(array_of_arrays.map(x => x["date"]))];
+              console.log(dates);
+              let tempDataSet = []
+              for (let d of dates) {
+                  temparray = []
+                  let newDate = d.toString();
+                  let trRow = document.createElement("tr");
+                  table.append(trRow);
+                  let date = document.createElement("td");
+                  date.textContent = newDate.slice(4, 6) + "-" + newDate.slice(6, 8) + "-" + newDate.slice(0, 4);
+                  trRow.append(date);
+                  temparray.push(date.textContent);
+                  for (let a of array) {  
+                      let iData = data.find(x => { return (x.state === a && x.date === d)})                     
+                      let td = document.createElement("td");
+                      if (iData) {
+                          td.textContent = iData[valD];
+                          temparray.push(iData[valD]);
+                      }
+                      else temparray.push(0);
+                      trRow.append(td);                   
+                  
+                  }
+                  tempDataSet.push(temparray);
+              }
+              
+              document.querySelector("#search").style.display = "none";
+              document.querySelector("#table").style.display = "block";
+              for (let t of tempDataSet.reverse()) {
+                  dataset.push(t);
+              }
+              console.log(dataset);
+              ds = dataset;
+          }
+      );
+      
+      //Default open to first screen
+      document.querySelector("#search").style.display = "block";            
+    </script>
+  </body>
+</html>
